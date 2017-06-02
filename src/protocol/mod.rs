@@ -1,7 +1,10 @@
 use base::{Handle, MemoryType};
-use console::SimpleTextOutput;
 use guid::Guid;
-use void::{CVoid, NotYetDef};
+use void::NotYetDef;
+
+mod device_path;
+
+pub use self::device_path::*;
 
 pub trait Protocol {
     fn guid() -> &'static Guid;
@@ -16,8 +19,8 @@ pub struct LoadedImageProtocol {
     revision: u32,
     parent_handle: Handle,
     system_table: *const NotYetDef,
-    device_handle: Handle,
-    file_path: *const NotYetDef,
+    pub device_handle: Handle,
+    pub file_path: *const DevicePathProtocol,
     __reserved: *const NotYetDef,
     load_options_size: u32,
     load_options: *const NotYetDef,
