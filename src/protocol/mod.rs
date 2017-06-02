@@ -1,9 +1,10 @@
-use ::base::{Handle, MemoryType};
-use ::guid::Guid;
-use ::void::NotYetDef;
+use base::{Handle, MemoryType};
+use console::SimpleTextOutput;
+use guid::Guid;
+use void::{CVoid, NotYetDef};
 
 pub trait Protocol {
-    fn guid() -> &'static ::guid::Guid;
+    fn guid() -> &'static Guid;
 }
 
 /// GUID for UEFI protocol for loaded images
