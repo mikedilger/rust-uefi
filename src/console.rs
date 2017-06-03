@@ -5,8 +5,8 @@ use systemtable;
 #[derive(Clone, Copy, Debug)]
 #[repr(C)]
 pub struct InputKey {
-    scan_code: u16,
-    unicode_char: u16,
+    pub scan_code: u16,
+    pub unicode_char: u16,
 }
 
 #[repr(u8)]
