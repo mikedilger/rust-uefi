@@ -5,6 +5,7 @@ use void::{NotYetDef, CVoid};
 use base::{Event, Handle, Handles, MemoryType, Status};
 use event::{EventType, EventNotify, TimerDelay};
 use task::TPL;
+use protocol::Protocol;
 use guid;
 use table;
 
@@ -57,7 +58,7 @@ pub struct BootServices {
     open_protocol_information: *const NotYetDef,
     protocols_per_handle: *const NotYetDef,
     locate_handle_buffer: unsafe extern "win64" fn(search_type: LocateSearchType, protocol: &guid::Guid, search_key: *const CVoid, nhandles: *mut usize, handles: *mut *mut CVoid) -> Status,
-    locate_protocol: *const NotYetDef,
+    locate_protocol: unsafe extern "win64" fn(protocol: &guid::Guid, registration: *const CVoid, interface: &mut *mut CVoid) -> Status,
     install_multiple_protocol_interfaces: *const NotYetDef,
     uninstall_multiple_protocol_interfaces: *const NotYetDef,
     calculate_crc32: *const NotYetDef,
@@ -107,7 +108,7 @@ impl BootServices {
         Ok(index)
     }
 
-    pub fn handle_protocol<T: ::Protocol>(&self, handle: Handle) -> Result<&'static T, Status> {
+    pub fn handle_protocol<T: Protocol>(&self, handle: Handle) -> Result<&'static T, Status> {
         let mut ptr : *mut CVoid = 0 as *mut CVoid;
         let guid = T::guid();
 
@@ -124,7 +125,7 @@ impl BootServices {
     }
 
     // TODO: for the love of types, fix me
-    pub fn close_protocol<T: ::Protocol>(&self, handle: Handle, agent_handle: Handle, controller_handle: Handle) -> Status {
+    pub fn close_protocol<T: Protocol>(&self, handle: Handle, agent_handle: Handle, controller_handle: Handle) -> Status {
         let guid = T::guid();
 
         unsafe {
@@ -133,7 +134,7 @@ impl BootServices {
     }
 
     /// Retrives a slice of handles by protocol GUID.
-    pub fn locate_handle_by_protocol<T: ::Protocol>(&self) -> Result<Handles, Status> {
+    pub fn locate_handle_by_protocol<T: Protocol>(&self) -> Result<Handles, Status> {
         let mut nhandles : usize = 0;
         let mut handles : *mut CVoid = ptr::null_mut();
         let guid = T::guid();
@@ -158,6 +159,23 @@ impl BootServices {
     pub fn set_watchdog_timer(&self, seconds: usize, code: u64) -> Status {
         unsafe {
             (self.set_watchdog_timer)(seconds, code, 0, ptr::null())
+        }
+    }
+
+    /// Find the first device handle that supports a given protocol, and return a pointer to the
+    /// protocol interface from that handle.
+    pub fn locate_protocol<T: Protocol>(&self, registration: *const CVoid) -> Result<&'static T, Status> {
+        let mut ptr: *mut CVoid = 0 as *mut CVoid;
+        let guid = T::guid();
+
+        unsafe {
+            let status = (self.locate_protocol)(guid, registration, &mut ptr);
+            if status != Status::Success {
+                return Err(status);
+            }
+
+            let r = mem::transmute::<*mut CVoid, &'static T>(ptr);
+            Ok(r)
         }
     }
 
