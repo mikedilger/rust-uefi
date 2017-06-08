@@ -14,10 +14,12 @@
 
 use core::mem;
 
+use base::Status;
 use console::SimpleTextOutput;
 use guid::Guid;
 use protocol::Protocol;
 use void::CVoid;
+use util::utf16_ptr_to_str;
 
 #[repr(u8)]
 pub enum DevicePathTypes {
@@ -188,40 +190,48 @@ impl Protocol for DevicePathToTextProtocol {
 }
 
 impl DevicePathToTextProtocol {
-    pub fn device_path_node_to_text(&self, device_node: *const DevicePathProtocol, display_only: bool, allow_shortcuts: bool) -> *const u16 {
-        unsafe {
-            (self.device_path_node_to_text)(device_node, display_only as u8, allow_shortcuts as u8)
-        }
+    pub fn device_path_node_to_text(&self, device_node: *const DevicePathProtocol, display_only: bool, allow_shortcuts: bool) -> Result<&str, Status> {
+        let chars: *const u16 = unsafe { (self.device_path_node_to_text)(device_node, display_only as u8, allow_shortcuts as u8) };
+        let out = utf16_ptr_to_str(chars);
+        ::get_system_table().boot_services().free_pool(chars);
+        out
     }
 
-    pub fn device_path_to_text(&self, device_node: *const DevicePathProtocol, display_only: bool, allow_shortcuts: bool) -> *const u16 {
-        unsafe {
-            (self.device_path_to_text)(device_node, display_only as u8, allow_shortcuts as u8)
-        }
+    pub fn device_path_to_text(&self, device_node: *const DevicePathProtocol, display_only: bool, allow_shortcuts: bool) -> Result<&str, Status> {
+        let chars: *const u16 = unsafe { (self.device_path_to_text)(device_node, display_only as u8, allow_shortcuts as u8) };
+        let out = utf16_ptr_to_str(chars);
+        ::get_system_table().boot_services().free_pool(chars);
+        out
     }
 
-    pub fn print_device_path_node(device_node: *const DevicePathProtocol, display_only: bool, allow_shortcuts: bool) {
+    pub fn print_device_path_node(device_node: *const DevicePathProtocol, display_only: bool, allow_shortcuts: bool) -> Result<(), Status> {
         let system_table = ::get_system_table();
         let boot_services = system_table.boot_services();
 
-        let this: &'static DevicePathToTextProtocol = boot_services.locate_protocol(0 as *const CVoid).unwrap();
-
-        let ptr = this.device_path_node_to_text(device_node, display_only, allow_shortcuts);
-
-        system_table.console().write_raw(ptr);
-        system_table.boot_services().free_pool(ptr);
+        boot_services
+            .locate_protocol::<DevicePathToTextProtocol>(0 as *const CVoid)
+            .and_then(|this| {
+                          this.device_path_node_to_text(device_node, display_only, allow_shortcuts)
+                              .map(|result| {
+                                       system_table.console().write(result);
+                                       ()
+                                   })
+                     })
     }
 
-    pub fn print_device_path(device_node: *const DevicePathProtocol, display_only: bool, allow_shortcuts: bool) {
+    pub fn print_device_path(device_node: *const DevicePathProtocol, display_only: bool, allow_shortcuts: bool) -> Result<(), Status> {
         let system_table = ::get_system_table();
         let boot_services = system_table.boot_services();
 
-        let this: &'static DevicePathToTextProtocol = boot_services.locate_protocol(0 as *const CVoid).unwrap();
-
-        let ptr = this.device_path_to_text(device_node, display_only, allow_shortcuts);
-
-        system_table.console().write_raw(ptr);
-        system_table.boot_services().free_pool(ptr);
+        boot_services
+            .locate_protocol::<DevicePathToTextProtocol>(0 as *const CVoid)
+            .and_then(|this| {
+                          this.device_path_to_text(device_node, display_only, allow_shortcuts)
+                              .map(|result| {
+                                       system_table.console().write(result);
+                                       ()
+                                   })
+                     })
     }
 }
 
