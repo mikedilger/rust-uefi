@@ -1,3 +1,5 @@
+use core::fmt;
+
 use void::*;
 use base::{Event, Status};
 use systemtable;
@@ -203,6 +205,15 @@ impl SimpleTextInput for Console {
                 },
             }
         }
+    }
+}
+
+impl fmt::Write for Console {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        if self.write(s) == Status::Success {
+            return Ok(());
+        }
+        return Err(fmt::Error);
     }
 }
 
