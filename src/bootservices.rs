@@ -5,7 +5,7 @@ use void::{NotYetDef, CVoid};
 use base::{Event, Handle, Handles, MemoryType, Status};
 use event::{EventType, EventNotify, TimerDelay};
 use task::TPL;
-use protocol::Protocol;
+use protocol::{DevicePathProtocol, Protocol};
 use guid;
 use table;
 
@@ -43,8 +43,8 @@ pub struct BootServices {
     locate_handle: *const NotYetDef,
     locate_device_path: *const NotYetDef,
     install_configuration_table: *const NotYetDef,
-    load_image: *const NotYetDef,
-    start_image: *const NotYetDef,
+    load_image: unsafe extern "win64" fn(boot_policy: u8, parent_image_handle: Handle, device_path: *const DevicePathProtocol, source_buffer: *const CVoid, source_size: usize, image_handle: *mut Handle) -> Status,
+    start_image: unsafe extern "win64" fn(image_handle: Handle, exit_data_size: *mut usize, exit_data: *mut *const u16) -> Status,
     exit: *const NotYetDef,
     unload_image: *const NotYetDef,
     exit_boot_services: *const NotYetDef,
@@ -146,6 +146,46 @@ impl BootServices {
         }
 
         return Ok(Handles::new(handles as *mut Handle, nhandles));
+    }
+
+    /// Load an image by device path and return its handle.
+    pub fn load_image(&self, boot_policy: bool, parent_image_handle: Handle, device_path: *const DevicePathProtocol) -> Result<Handle, Status> {
+        self.load_image_buffer(boot_policy, parent_image_handle, device_path, 0 as *const CVoid, 0)
+    }
+
+    /// Load an image already loaded into memory at source_buffer and return its handle.
+    pub fn load_image_buffer(&self, boot_policy: bool, parent_image_handle: Handle, device_path: *const DevicePathProtocol, source_buffer: *const CVoid, source_size: usize) -> Result<Handle, Status> {
+        let mut handle: Handle = Default::default();
+
+        let result = unsafe { (self.load_image)(boot_policy as u8, parent_image_handle, device_path, source_buffer, source_size, &mut handle) };
+        if result != Status::Success {
+            return Err(result);
+        }
+
+        Ok(handle)
+    }
+
+    /// Start a loaded image, and return its ExitData.
+    pub fn start_image_with_exitdata(&self, image_handle: Handle) -> Result<(*const u16, usize), Status> {
+        let mut exit_data_ptr: *const u16 = 0 as *const u16;
+        let mut exit_data_size: usize = 0;
+
+        let result = unsafe { (self.start_image)(image_handle, &mut exit_data_size, &mut exit_data_ptr) };
+        if result != Status::Success {
+            return Err(result);
+        }
+
+        Ok((exit_data_ptr, exit_data_size))
+    }
+
+    /// Start a loaded image, but ignore its ExitData.
+    pub fn start_image(&self, image_handle: Handle) -> Result<(), Status> {
+        let result = unsafe { (self.start_image)(image_handle, 0 as *mut usize, 0 as *mut *const u16) };
+        if result != Status::Success {
+            return Err(result);
+        }
+
+        Ok(())
     }
 
     /// Sleep for a number of microseconds.
