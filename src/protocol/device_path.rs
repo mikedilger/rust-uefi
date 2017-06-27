@@ -29,10 +29,121 @@ pub enum DevicePathTypes {
     End = 0x7F
 }
 
+impl Into<u8> for DevicePathTypes {
+    fn into(self) -> u8 {
+        self as u8
+    }
+}
+
+#[repr(u8)]
+pub enum HardwareSubTypes {
+    PCI = 0x01,
+    PCCARD = 0x02,
+    MemoryMapped = 0x03,
+    Vendor = 0x04,
+    Controller = 0x05,
+    BMC = 0x06
+}
+
+impl Into<u8> for HardwareSubTypes {
+    fn into(self) -> u8 {
+        self as u8
+    }
+}
+
+#[repr(u8)]
+pub enum ACPISubTypes {
+    ACPIDevicePath = 0x01,
+    ExpandedACPIDevicePath = 0x02,
+    _ADR = 0x03
+}
+
+impl Into<u8> for ACPISubTypes {
+    fn into(self) -> u8 {
+        self as u8
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[repr(u8)]
+pub enum MessagingSubTypes {
+    ATAPI = 0x01,
+    SCSI = 0x02,
+    FibreChannel = 0x03,
+    // The EFI specification calls this type "1394", but that won't work as an enum variant for
+    // Rust.
+    FireWire = 0x4,
+    USB = 0x5,
+    I2O = 0x6,
+    Infiniband = 0x9,
+    Vendor = 0xA,
+    MACAddress = 0xB,
+    IPv4 = 0xC,
+    IPv6 = 0xD,
+    UART = 0xE,
+    USBClass = 0xF,
+    USBWWID = 0x10,
+    DeviceLogicalUnit = 0x11,
+    SATA = 0x12,
+    iSCSI = 0x13,
+    Vlan = 0x14,
+    FibreChannelEx = 0x15,
+    SASEx = 0x16,
+    NVMExpressNamespace = 0x17,
+    URI = 0x18,
+    UFS = 0x19,
+    SD = 0x1A,
+    Bluetooth = 0x1B,
+    WiFi = 0x1C,
+    eMMC = 0x1D
+}
+
+impl Into<u8> for MessagingSubTypes {
+    fn into(self) -> u8 {
+        self as u8
+    }
+}
+
+#[repr(u8)]
+pub enum MediaSubTypes {
+    HardDrive = 0x1,
+    CDROM = 0x2,
+    Vendor = 0x3,
+    FilePath = 0x4,
+    MediaProtocol = 0x5,
+    PIWGFirmwareFile = 0x6,
+    PIWGFirmwareVolume = 0x7,
+    RelativeOffsetRange = 0x8,
+    RAMDisk = 0x9
+}
+
+impl Into<u8> for MediaSubTypes {
+    fn into(self) -> u8 {
+        self as u8
+    }
+}
+
+#[repr(u8)]
+pub enum BIOSSubTypes {
+    BIOSBootSpecification = 0x1
+}
+
+impl Into<u8> for BIOSSubTypes {
+    fn into(self) -> u8 {
+        self as u8
+    }
+}
+
 #[repr(u8)]
 pub enum EndPathSubTypes {
     EndInstance = 0x01,
     EndEntirePath = 0xFF
+}
+
+impl Into<u8> for EndPathSubTypes {
+    fn into(self) -> u8 {
+        self as u8
+    }
 }
 
 /// GUID for UEFI protocol for device paths
