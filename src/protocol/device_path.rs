@@ -258,6 +258,7 @@ impl DevicePathFromTextProtocol {
         str_to_utf16_ptr(path)
             .map(|utf16_str| {
                 let out = unsafe { &*((self.text_to_device_path_node)(utf16_str)) };
+                // FIXME(csssuf)
                 // Ideally, at this point, we'd free utf16_str. However, free_pool(utf16_str) seems
                 // to hang here for unknown reasons. So we leak it.
                 out
@@ -268,6 +269,7 @@ impl DevicePathFromTextProtocol {
         str_to_utf16_ptr(path)
             .map(|utf16_str| {
                 let out = unsafe { &*((self.text_to_device_path)(utf16_str)) };
+                // FIXME(csssuf)
                 // Ideally, at this point, we'd free utf16_str. However, free_pool(utf16_str) seems
                 // to hang here for unknown reasons. So we leak it.
                 out
@@ -280,7 +282,7 @@ pub struct DevicePathUtilitiesProtocol {
     get_device_path_size: *const CVoid,
     duplicate_device_path: *const CVoid,
     append_device_path: unsafe extern "win64" fn(src1: *const DevicePathProtocol, src2: *const DevicePathProtocol) -> *const DevicePathProtocol,
-    append_device_node: *const CVoid,
+    append_device_node: unsafe extern "win64" fn(path: *const DevicePathProtocol, node: *const DevicePathProtocol) -> *const DevicePathProtocol,
     append_device_path_instance: *const CVoid,
     get_next_device_path_instance: *const CVoid,
     is_device_path_multi_instance: *const CVoid,
@@ -303,6 +305,17 @@ impl DevicePathUtilitiesProtocol {
                 // being passed in, or another reason is unspecified. Unless the caller passes in
                 // a massive DevicePathProtocol, it's unlikely that it's due to the actual
                 // parameters, so error here is represented as OutOfResources.
+                return Err(Status::OutOfResources);
+            }
+            Ok(out)
+        }
+    }
+
+    pub fn append_device_node(&self, path: *const DevicePathProtocol, node: *const DevicePathProtocol) -> Result<*const DevicePathProtocol, Status> {
+        unsafe {
+            let out = (self.append_device_node)(path, node);
+            if out == 0 as *const DevicePathProtocol {
+                // See comment in append_device_path.
                 return Err(Status::OutOfResources);
             }
             Ok(out)
