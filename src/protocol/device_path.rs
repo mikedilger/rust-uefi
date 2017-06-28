@@ -298,7 +298,12 @@ impl DevicePathUtilitiesProtocol {
         unsafe {
             let out = (self.append_device_path)(src1, src2);
             if out == 0 as *const DevicePathProtocol {
-                return Err(Status::InvalidParameter);
+                // `out` being a null pointer indicates, according to the spec, that "memory could
+                // not be allocate[sic]." Whether that's due to memory conditions, bad parameters
+                // being passed in, or another reason is unspecified. Unless the caller passes in
+                // a massive DevicePathProtocol, it's unlikely that it's due to the actual
+                // parameters, so error here is represented as OutOfResources.
+                return Err(Status::OutOfResources);
             }
             Ok(out)
         }
