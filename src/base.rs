@@ -70,7 +70,7 @@ pub struct Event(pub *mut CVoid);
 /// Type for EFI_STATUS
 #[cfg_attr(target_pointer_width = "32", repr(u32))]
 #[cfg_attr(target_pointer_width = "64", repr(u64))]
-#[derive(PartialEq, PartialOrd, Debug)]
+#[derive(PartialEq, PartialOrd, Debug, Clone, Copy)]
 pub enum Status {
     Success = 0,
     LoadError = 1,
