@@ -258,7 +258,8 @@ impl DevicePathFromTextProtocol {
         str_to_utf16_ptr(path)
             .map(|utf16_str| {
                 let out = unsafe { &*((self.text_to_device_path_node)(utf16_str)) };
-                ::get_system_table().boot_services().free_pool(utf16_str);
+                // Ideally, at this point, we'd free utf16_str. However, free_pool(utf16_str) seems
+                // to hang here for unknown reasons. So we leak it.
                 out
             })
     }
@@ -267,7 +268,8 @@ impl DevicePathFromTextProtocol {
         str_to_utf16_ptr(path)
             .map(|utf16_str| {
                 let out = unsafe { &*((self.text_to_device_path)(utf16_str)) };
-                ::get_system_table().boot_services().free_pool(utf16_str);
+                // Ideally, at this point, we'd free utf16_str. However, free_pool(utf16_str) seems
+                // to hang here for unknown reasons. So we leak it.
                 out
             })
     }
