@@ -67,41 +67,47 @@ impl<'a> ::core::iter::ExactSizeIterator for HandlesIterator<'a> {
 #[repr(C)]
 pub struct Event(pub *mut CVoid);
 
+#[cfg(target_pointer_width = "32")]
+const ERR_FLAG: u32 = 1 << 31;
+
+#[cfg(target_pointer_width = "64")]
+const ERR_FLAG: u64 = 1 << 63;
+
 /// Type for EFI_STATUS
 #[cfg_attr(target_pointer_width = "32", repr(u32))]
 #[cfg_attr(target_pointer_width = "64", repr(u64))]
 #[derive(PartialEq, PartialOrd, Debug, Clone, Copy)]
 pub enum Status {
     Success = 0,
-    LoadError = 1,
-    InvalidParameter = 2,
-    Unsupported = 3,
-    BadBufferSize = 4,
-    BufferTooSmall = 5,
-    NotReady = 6,
-    DeviceError = 7,
-    WriteProtected = 8,
-    OutOfResources = 9,
-    VolumeCorrupted = 10,
-    VolumeFull = 11,
-    NoMedia = 12,
-    MediaChanged = 13,
-    NotFound = 14,
-    AccessDenied = 15,
-    NoResponse = 16,
-    NoMapping = 17,
-    Timeout = 18,
-    NotStarted = 19,
-    AlreadyStarted = 20,
-    Aborted = 21,
-    IcmpError = 22,
-    TftpError = 23,
-    ProtocolError = 24,
-    IncompatibleVersion = 25,
-    SecurityViolation = 26,
-    CrcError = 27,
-    EndOfMedia = 28,
-    EndOfFile = 31,
+    LoadError = 1 | ERR_FLAG,
+    InvalidParameter = 2 | ERR_FLAG,
+    Unsupported = 3 | ERR_FLAG,
+    BadBufferSize = 4 | ERR_FLAG,
+    BufferTooSmall = 5 | ERR_FLAG,
+    NotReady = 6 | ERR_FLAG,
+    DeviceError = 7 | ERR_FLAG,
+    WriteProtected = 8 | ERR_FLAG,
+    OutOfResources = 9 | ERR_FLAG,
+    VolumeCorrupted = 10 | ERR_FLAG,
+    VolumeFull = 11 | ERR_FLAG,
+    NoMedia = 12 | ERR_FLAG,
+    MediaChanged = 13 | ERR_FLAG,
+    NotFound = 14 | ERR_FLAG,
+    AccessDenied = 15 | ERR_FLAG,
+    NoResponse = 16 | ERR_FLAG,
+    NoMapping = 17 | ERR_FLAG,
+    Timeout = 18 | ERR_FLAG,
+    NotStarted = 19 | ERR_FLAG,
+    AlreadyStarted = 20 | ERR_FLAG,
+    Aborted = 21 | ERR_FLAG,
+    IcmpError = 22 | ERR_FLAG,
+    TftpError = 23 | ERR_FLAG,
+    ProtocolError = 24 | ERR_FLAG,
+    IncompatibleVersion = 25 | ERR_FLAG,
+    SecurityViolation = 26 | ERR_FLAG,
+    CrcError = 27 | ERR_FLAG,
+    EndOfMedia = 28 | ERR_FLAG,
+    EndOfFile = 31 | ERR_FLAG,
 }
 
 impl Status {
