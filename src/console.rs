@@ -99,7 +99,7 @@ pub trait SimpleTextOutput {
             i += 1;
 
             // if we hit the end of buf, send output
-            if i > buf.len() - 1 {
+            if i == buf.len() - 1 {
                 buf[i] = 0;
                 let status = self.write_raw(buf.as_ptr());
                 if status != Status::Success {
