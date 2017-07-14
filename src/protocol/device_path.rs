@@ -181,6 +181,10 @@ impl DevicePathProtocol {
             mem::transmute(self_u8.offset(4))
         }
     }
+
+    pub fn len(&self) -> u16 {
+        (self.length[0] as u16) | ((self.length[1] as u16) << 8)
+    }
 }
 
 #[repr(C)]
