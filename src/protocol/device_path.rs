@@ -185,6 +185,13 @@ impl DevicePathProtocol {
     pub fn len(&self) -> u16 {
         (self.length[0] as u16) | ((self.length[1] as u16) << 8)
     }
+
+    // Get a pointer to the DevicePathProtocol after this one, accounting for however big this one
+    // might be. This is very unsafe.
+    pub unsafe fn next(&self) -> &mut DevicePathProtocol {
+        let this_u8 = self as *const DevicePathProtocol as *const u8;
+        &mut *(this_u8.offset(self.len() as isize) as *mut DevicePathProtocol)
+    }
 }
 
 #[repr(C)]
