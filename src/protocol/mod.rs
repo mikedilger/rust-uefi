@@ -3,8 +3,10 @@ use guid::Guid;
 use void::NotYetDef;
 
 mod device_path;
+mod serial;
 
 pub use self::device_path::*;
+pub use self::serial::*;
 
 pub trait Protocol {
     fn guid() -> &'static Guid;
