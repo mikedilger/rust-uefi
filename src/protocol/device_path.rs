@@ -161,7 +161,7 @@ pub static EFI_DEVICE_PATH_FROM_TEXT_PROTOCOL_GUID: Guid = Guid(0x5C99A21, 0xC70
 pub static EFI_DEVICE_PATH_UTILITIES_PROTOCOL_GUID: Guid = Guid(0x379BE4E, 0xD706, 0x437D, [0xB0,0x37,0xED,0xB8,0x2F,0xB7,0x72,0xA4]);
 
 #[derive(Debug)]
-#[repr(C)]
+#[repr(C, packed)]
 pub struct DevicePathProtocol {
     pub type_: u8,
     pub sub_type: u8,
@@ -180,6 +180,17 @@ impl DevicePathProtocol {
             let self_u8: *const u8 = mem::transmute(self);
             mem::transmute(self_u8.offset(4))
         }
+    }
+
+    pub fn len(&self) -> u16 {
+        (self.length[0] as u16) | ((self.length[1] as u16) << 8)
+    }
+
+    // Get a pointer to the DevicePathProtocol after this one, accounting for however big this one
+    // might be. This is very unsafe.
+    pub unsafe fn next(&self) -> &mut DevicePathProtocol {
+        let this_u8 = self as *const DevicePathProtocol as *const u8;
+        &mut *(this_u8.offset(self.len() as isize) as *mut DevicePathProtocol)
     }
 }
 
@@ -280,7 +291,8 @@ impl DevicePathFromTextProtocol {
 #[repr(C)]
 pub struct DevicePathUtilitiesProtocol {
     get_device_path_size: *const CVoid,
-    duplicate_device_path: *const CVoid,
+    duplicate_device_path:
+        unsafe extern "win64" fn(src: *const DevicePathProtocol) -> *mut DevicePathProtocol,
     append_device_path: unsafe extern "win64" fn(src1: *const DevicePathProtocol, src2: *const DevicePathProtocol) -> *const DevicePathProtocol,
     append_device_node: unsafe extern "win64" fn(path: *const DevicePathProtocol, node: *const DevicePathProtocol) -> *const DevicePathProtocol,
     append_device_path_instance: *const CVoid,
@@ -296,6 +308,16 @@ impl Protocol for DevicePathUtilitiesProtocol {
 }
 
 impl DevicePathUtilitiesProtocol {
+    pub fn duplicate_device_path(&self, src: &DevicePathProtocol) -> Result<&mut DevicePathProtocol, Status> {
+        unsafe {
+            let out = (self.duplicate_device_path)(src);
+            if out.is_null() {
+                return Err(Status::OutOfResources);
+            }
+            Ok(&mut *out)
+        }
+    }
+
     pub fn append_device_path(&self, src1: *const DevicePathProtocol, src2: *const DevicePathProtocol) -> Result<*const DevicePathProtocol, Status> {
         unsafe {
             let out = (self.append_device_path)(src1, src2);

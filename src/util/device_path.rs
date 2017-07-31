@@ -13,7 +13,8 @@
 // limitations under the License.
 
 use base::Status;
-use protocol::{DevicePathProtocol, DevicePathUtilitiesProtocol, DevicePathTypes, MediaSubTypes};
+use protocol::{DevicePathProtocol, DevicePathUtilitiesProtocol, DevicePathTypes, EndPathSubTypes,
+               MediaSubTypes};
 use void::CVoid;
 use util::*;
 
@@ -41,4 +42,42 @@ pub fn create_file_device_node(filename: &str) -> Result<&DevicePathProtocol, St
                     })
             })
     })
+}
+
+/// Get the "parent" of a given device path - i.e., take all but the last DevicePathProtocol
+/// instance in the entire device path. This function allocates memory with `allocate_pool`, and it
+/// is the caller's responsibility to free it.
+pub fn parent_device_path(
+    src_device_path: &DevicePathProtocol,
+) -> Result<&mut DevicePathProtocol, Status> {
+    // If the device path we're given is already an end, there's nothing we can do.
+    if src_device_path.type_ ==  DevicePathTypes::End.into() {
+        return Err(Status::InvalidParameter);
+    }
+
+    ::get_system_table()
+        .boot_services()
+        .locate_protocol::<DevicePathUtilitiesProtocol>(0 as *const CVoid)
+        .and_then(|utilities| {
+            utilities.duplicate_device_path(src_device_path).map(
+                |device_path| {
+                    let mut this_device_path_ptr = device_path as *mut DevicePathProtocol;
+                    loop {
+                        let next_device_path_ptr = unsafe { (&*this_device_path_ptr).next() };
+
+                        unsafe {
+                            if (*next_device_path_ptr).type_ == DevicePathTypes::End.into() {
+                                (*this_device_path_ptr).type_ = DevicePathTypes::End.into();
+                                (*this_device_path_ptr).sub_type = EndPathSubTypes::EndEntirePath
+                                    .into();
+                                (*this_device_path_ptr).length = [4, 0];
+                                return device_path;
+                            }
+                        }
+
+                        this_device_path_ptr = next_device_path_ptr;
+                    }
+                },
+            )
+        })
 }
